@@ -10,28 +10,28 @@ fn main() -> Result<()> {
     let command = &args[3];
     let command_args = &args[4..];
 
-    let tmp_dir = tempfile::tempdir()?;
+    let sandbox = tempfile::tempdir().context("failed to create tmpdir")?;
 
-    let to = tmp_dir
+    let to = sandbox
         .path()
         .join(command.strip_prefix('/').unwrap_or(command));
 
-    std::fs::create_dir_all(to.parent().unwrap()).context("failed to copy the command")?;
+    std::fs::create_dir_all(to.parent().unwrap()).context("failed create dir for the command")?;
 
-    std::fs::copy(command, to)?;
+    std::fs::copy(command, to).context("failed to copy the commande")?;
 
     // std::process::Command expect /dev/null to work
     // let dev_null = tmp_dir.path().join("dev/null");
-    fs::create_dir_all(tmp_dir.path().join("dev/null")).context("failed to create /dev/null")?;
+    fs::create_dir_all(sandbox.path().join("dev/null")).context("failed to create /dev/null")?;
     // fs::File::create(&dev_null)?;
 
-    fs::create_dir_all(tmp_dir.path().join("usr/local/bin"))
+    fs::create_dir_all(sandbox.path().join("usr/local/bin"))
         .context("failed to create /usr/local/bin")?;
 
     // fs::copy(command, dev_null)?;
 
-    chroot(tmp_dir)?;
-    env::set_current_dir("/")?;
+    chroot(sandbox).context("failed to chroot")?;
+    env::set_current_dir("/").context("failed to set current dir")?;
 
     let output = std::process::Command::new(command)
         .args(command_args)
