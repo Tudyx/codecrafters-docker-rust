@@ -9,7 +9,9 @@ fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
     let command = &args[3];
     let command_args = &args[4..];
-    chroot("/some_dir")?;
+    fs::create_dir("/tmp/some_dir")?;
+    fs::copy("/usr/bin/ls", "/tmp/some_dir")?;
+    chroot("/tmp/some_dir")?;
     env::set_current_dir("/")?;
     fs::create_dir("/dev/null")?;
 
