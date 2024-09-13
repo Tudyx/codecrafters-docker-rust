@@ -4,26 +4,21 @@ use anyhow::{Context, Result};
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 fn main() -> Result<()> {
-    // You can use print statements as follows for debugging, they'll be visible when running tests.
-    // Uncomment this block to pass the first stage!
     let args: Vec<_> = std::env::args().collect();
     let command = &args[3];
     let command_args = &args[4..];
 
     let sandbox = tempfile::tempdir().context("failed to create tmpdir")?;
 
-    // copy the binary into the sandbox
+    // Copy the docker-explorer binary into the sandbox
     let path_command = sandbox
         .path()
         .join(command.strip_prefix('/').unwrap_or(command));
-    // println!("create_dir_all '{:?}'", path_command.parent().unwrap());
-
     std::fs::create_dir_all(path_command.parent().unwrap())
         .context("failed create dir for the command")?;
     std::fs::copy(command, path_command).context("failed to copy the commande")?;
-    // println!("copy command {command}");
 
-    // std::process::Command expect /dev/null to work
+    // Create /dev/null required by std::process::Command
     let dev_null = sandbox.path().join("dev/null");
     fs::create_dir_all(sandbox.path().join(dev_null.parent().unwrap()))
         .context("failed to create /dev/null")?;
