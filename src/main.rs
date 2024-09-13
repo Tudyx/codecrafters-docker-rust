@@ -21,9 +21,10 @@ fn main() -> Result<()> {
     std::fs::copy(command, to).context("failed to copy the commande")?;
 
     // std::process::Command expect /dev/null to work
-    // let dev_null = tmp_dir.path().join("dev/null");
-    fs::create_dir_all(sandbox.path().join("dev/null")).context("failed to create /dev/null")?;
-    // fs::File::create(&dev_null)?;
+    let dev_null = sandbox.path().join("dev/null");
+    fs::create_dir_all(sandbox.path().join(dev_null.parent().unwrap()))
+        .context("failed to create /dev/null")?;
+    fs::File::create(&dev_null)?;
 
     fs::create_dir_all(sandbox.path().join("usr/local/bin"))
         .context("failed to create /usr/local/bin")?;
