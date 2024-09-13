@@ -23,7 +23,7 @@ fn main() -> Result<()> {
         std::io::stdout().write_all(&output.stdout)?;
         std::io::stderr().write_all(&output.stderr)?;
     } else {
-        std::process::exit(1);
+        std::process::exit(output.status.code().unwrap_or(1));
     }
 
     Ok(())
