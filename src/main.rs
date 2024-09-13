@@ -16,18 +16,20 @@ fn main() -> Result<()> {
         .path()
         .join(command.strip_prefix('/').unwrap_or(command));
 
-    std::fs::create_dir_all(to.parent().unwrap())?;
+    std::fs::create_dir_all(to.parent().unwrap()).context("failed to copy the command")?;
 
     std::fs::copy(command, to)?;
 
     // std::process::Command expect /dev/null to work
-    let dev_null = tmp_dir.path().join("dev/null");
-    fs::create_dir_all(dev_null.parent().unwrap())?;
-    fs::File::create(&dev_null)?;
+    // let dev_null = tmp_dir.path().join("dev/null");
+    fs::create_dir_all(tmp_dir.path().join("dev/null")).context("failed to create /dev/null")?;
+    // fs::File::create(&dev_null)?;
 
-    fs::copy(command, dev_null)?;
+    fs::create_dir_all(tmp_dir.path().join("usr/local/bin"))
+        .context("failed to create /usr/local/bin")?;
 
-    fs::copy("/usr/bin/ls", &tmp_dir)?;
+    // fs::copy(command, dev_null)?;
+
     chroot(tmp_dir)?;
     env::set_current_dir("/")?;
 
