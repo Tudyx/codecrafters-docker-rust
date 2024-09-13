@@ -12,13 +12,15 @@ fn main() -> Result<()> {
 
     let sandbox = tempfile::tempdir().context("failed to create tmpdir")?;
 
+    // copy the binary into the sandbox
     let to = sandbox
         .path()
         .join(command.strip_prefix('/').unwrap_or(command));
+    println!("create_dir_all '{:?}'", to.parent().unwrap());
 
     std::fs::create_dir_all(to.parent().unwrap()).context("failed create dir for the command")?;
-
     std::fs::copy(command, to).context("failed to copy the commande")?;
+    println!("copy command {command}");
 
     // std::process::Command expect /dev/null to work
     let dev_null = sandbox.path().join("dev/null");
@@ -26,11 +28,18 @@ fn main() -> Result<()> {
         .context("failed to create /dev/null")?;
     fs::File::create(&dev_null)?;
 
-    fs::create_dir_all(sandbox.path().join("usr/local/bin"))
-        .context("failed to create /usr/local/bin")?;
+    let folder = sandbox.path().join("usr/local/bin");
+    let folder = folder.to_string_lossy();
+    println!("ls {folder}");
 
-    // fs::copy(command, dev_null)?;
+    let stdout = std::process::Command::new("ls")
+        .arg(folder.as_ref())
+        .output()
+        .unwrap()
+        .stdout;
+    println!("{}", std::str::from_utf8(&stdout).unwrap());
 
+    // Create the jail.
     chroot(sandbox).context("failed to chroot")?;
     env::set_current_dir("/").context("failed to set current dir")?;
 
