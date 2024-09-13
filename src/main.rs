@@ -1,4 +1,4 @@
-use std::{env, io::Write, os::unix::fs::chroot};
+use std::{env, fs, io::Write, os::unix::fs::chroot};
 
 use anyhow::{Context, Result};
 
@@ -9,10 +9,13 @@ fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
     let command = &args[3];
     let command_args = &args[4..];
-    chroot("/sandbox")?;
+    chroot("/some_dir")?;
     env::set_current_dir("/")?;
+    fs::create_dir("/dev/null")?;
+
     let output = std::process::Command::new(command)
         .args(command_args)
+        .current_dir("/")
         .output()
         .with_context(|| {
             format!(
