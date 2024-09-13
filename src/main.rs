@@ -28,7 +28,7 @@ fn main() -> Result<()> {
         .context("failed to create /dev/null")?;
     fs::File::create(&dev_null)?;
 
-    let folder = sandbox.path().join("usr/local/bin");
+    let folder = sandbox.path().join("usr/local/bin/docker-explorer");
     let folder = folder.to_string_lossy();
     println!("ls {folder}");
 
