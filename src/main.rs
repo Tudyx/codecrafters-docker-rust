@@ -11,14 +11,25 @@ fn main() -> Result<()> {
     let command_args = &args[4..];
 
     let tmp_dir = tempfile::tempdir()?;
+
+    let to = tmp_dir
+        .path()
+        .join(command.strip_prefix('/').unwrap_or(command));
+
+    std::fs::create_dir_all(to.parent().unwrap())?;
+
+    std::fs::copy(command, to)?;
+
     // std::process::Command expect /dev/null to work
     let dev_null = tmp_dir.path().join("dev/null");
     fs::create_dir_all(dev_null.parent().unwrap())?;
-    fs::File::create(dev_null)?;
+    fs::File::create(&dev_null)?;
+
+    fs::copy(command, dev_null)?;
 
     fs::copy("/usr/bin/ls", &tmp_dir)?;
     chroot(tmp_dir)?;
-    // env::set_current_dir("/")?;
+    env::set_current_dir("/")?;
 
     let output = std::process::Command::new(command)
         .args(command_args)
