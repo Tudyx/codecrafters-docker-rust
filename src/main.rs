@@ -9,15 +9,20 @@ fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
     let command = &args[3];
     let command_args = &args[4..];
-    fs::create_dir("/tmp/some_dir")?;
-    fs::copy("/usr/bin/ls", "/tmp/some_dir")?;
-    chroot("/tmp/some_dir")?;
-    env::set_current_dir("/")?;
-    fs::create_dir("/dev/null")?;
+
+    let tmp_dir = tempfile::tempdir()?;
+    // std::process::Command expect /dev/null to work
+    let dev_null = tmp_dir.path().join("dev/null");
+    fs::create_dir_all(dev_null.parent().unwrap())?;
+    fs::File::create(dev_null)?;
+
+    fs::copy("/usr/bin/ls", &tmp_dir)?;
+    chroot(tmp_dir)?;
+    // env::set_current_dir("/")?;
 
     let output = std::process::Command::new(command)
         .args(command_args)
-        .current_dir("/")
+        // .current_dir("/")
         .output()
         .with_context(|| {
             format!(
