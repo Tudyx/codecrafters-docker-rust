@@ -1,6 +1,7 @@
 use std::{env, fs, os::unix::fs::chroot};
 
 use anyhow::{Context, Result};
+use libc::{unshare, CLONE_NEWPID};
 
 // Usage: your_docker.sh run <image> <command> <arg1> <arg2> ...
 fn main() -> Result<()> {
@@ -28,6 +29,8 @@ fn main() -> Result<()> {
     chroot(sandbox).context("failed to chroot")?;
     env::set_current_dir("/").context("failed to set current dir")?;
 
+    // Create a pid namespace for the process.
+    unsafe { unshare(CLONE_NEWPID) };
     let status = std::process::Command::new(command)
         .args(command_args)
         .status()
