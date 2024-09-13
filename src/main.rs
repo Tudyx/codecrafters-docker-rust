@@ -1,4 +1,4 @@
-use std::{env, fs, io::Write, os::unix::fs::chroot};
+use std::{env, fs, os::unix::fs::chroot};
 
 use anyhow::{Context, Result};
 
@@ -29,27 +29,13 @@ fn main() -> Result<()> {
         .context("failed to create /dev/null")?;
     fs::File::create(&dev_null)?;
 
-    // let folder = sandbox.path().join("usr/local/bin/docker-explorer");
-    // let folder = folder.to_string_lossy();
-    // println!("ls {folder}");
-
-    // let stdout = std::process::Command::new("ls")
-    //     .arg(folder.as_ref())
-    //     .output()
-    //     .unwrap()
-    //     .stdout;
-    // println!("{}", std::str::from_utf8(&stdout).unwrap());
-
     // Create the jail.
     chroot(sandbox).context("failed to chroot")?;
     env::set_current_dir("/").context("failed to set current dir")?;
-    // println!("the command excuted\n{}", command);
-    // println!("the command args exexcuted\n{:?}", command_args);
 
-    let output = std::process::Command::new(command)
+    let status = std::process::Command::new(command)
         .args(command_args)
-        // .current_dir("/")
-        .output()
+        .status()
         .with_context(|| {
             format!(
                 "Tried to run '{}' with arguments {:?}",
@@ -57,11 +43,8 @@ fn main() -> Result<()> {
             )
         })?;
 
-    if output.status.success() {
-        std::io::stdout().write_all(&output.stdout)?;
-        std::io::stderr().write_all(&output.stderr)?;
-    } else {
-        std::process::exit(output.status.code().unwrap_or(1));
+    if !status.success() {
+        std::process::exit(status.code().unwrap_or(1));
     }
     Ok(())
 }
