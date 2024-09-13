@@ -25,6 +25,5 @@ fn main() -> Result<()> {
     } else {
         std::process::exit(output.status.code().unwrap_or(1));
     }
-
     Ok(())
 }
