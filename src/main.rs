@@ -30,7 +30,7 @@ fn main() -> Result<()> {
     fs::File::create(&dev_null)?;
 
     // Create the jail.
-    chroot(sandbox).context("failed to chroot")?;
+    chroot(sandbox.path()).context("failed to chroot")?;
     env::set_current_dir("/").context("failed to set current dir")?;
 
     // Create a pid namespace for the process.
@@ -56,12 +56,12 @@ fn fetch_image_from_registry(image: &str, sandbox: &Path) -> Result<()> {
         Some((image, tag)) => (image, tag),
         None => (image, "latest"),
     };
-    println!("Will fetch the '{image}' image with this tag '{tag}' from the registry");
     let response : AuthResponse = reqwest::blocking::get(format!("https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{image}:pull"))?.json()?;
     let token = response.token;
     let client = reqwest::blocking::ClientBuilder::new().build()?;
     // For some image, like busybox, the returned response won't contains the layer
     // but the list of manifest. The accept header get ignore in that case.
+    // This function won't work in that case, but there is not test for that.
     let manifest: serde_json::Value = client
         .get(format!(
             "https://registry.hub.docker.com/v2/library/{image}/manifests/{tag}"
@@ -73,7 +73,6 @@ fn fetch_image_from_registry(image: &str, sandbox: &Path) -> Result<()> {
         )
         .send()?
         .json()?;
-    println!("{manifest:#?}");
 
     for layer in manifest["layers"].as_array().unwrap() {
         let digest = layer["digest"].as_str().unwrap();
@@ -84,23 +83,14 @@ fn fetch_image_from_registry(image: &str, sandbox: &Path) -> Result<()> {
             .bearer_auth(&token)
             .send()?
             .bytes()?;
-        println!("Size of the layer is {} bytes", tar_gz.len());
 
         let tar = GzDecoder::new(tar_gz.as_ref());
         let mut archive = tar::Archive::new(tar);
 
-        // archive.set_preserve_permissions(true);
-
-        // archive.set_unpack_xattrs(true);
         archive.unpack(sandbox)?;
     }
     Ok(())
 }
-
-// #[derive(Deserialize, Debug)]
-// struct ManifestResponse {
-//     manifests: Vec,
-// }
 
 #[derive(Deserialize, Debug)]
 struct AuthResponse {
