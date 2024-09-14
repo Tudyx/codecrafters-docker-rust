@@ -52,9 +52,10 @@ fn main() -> Result<()> {
 }
 
 fn fetch_image_from_registry(image: &str, sandbox: &Path) -> Result<()> {
-    let (image, tag) = image
-        .split_once(':')
-        .ok_or_else(|| anyhow::anyhow!("wrong image name"))?;
+    let (image, tag) = match image.split_once(':') {
+        Some((image, tag)) => (image, tag),
+        None => (image, "latest"),
+    };
     println!("Will fetch the '{image}' image with this tag '{tag}' from the registry");
     let response : AuthResponse = reqwest::blocking::get(format!("https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/{image}:pull"))?.json()?;
     let token = response.token;
